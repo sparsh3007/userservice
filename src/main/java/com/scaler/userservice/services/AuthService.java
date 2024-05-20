@@ -1,6 +1,10 @@
 package com.scaler.userservice.services;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.scaler.userservice.dtos.UserDto;
+import com.scaler.userservice.exceptions.NotFoundException;
+import com.scaler.userservice.exceptions.PasswordMismatchException;
+import com.scaler.userservice.exceptions.UserAlreadyExistsException;
 import com.scaler.userservice.models.Session;
 import com.scaler.userservice.models.SessionStatus;
 import com.scaler.userservice.models.User;
@@ -21,12 +25,9 @@ import org.springframework.util.MultiValueMapAdapter;
 
 import javax.crypto.SecretKey;
 import java.time.LocalDate;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
-import static net.sf.jsqlparser.util.validation.metadata.NamedObject.user;
+//import static net.sf.jsqlparser.util.validation.metadata.NamedObject.user;
 
 @Service
 public class AuthService {
@@ -34,22 +35,26 @@ public class AuthService {
     private SessionRepository sessionRepository;
     private BCryptPasswordEncoder bCryptPasswordEncoder;
     private SecretKey secretKey;
+//    private KafkaProducerClient kafkaProducerClient;
+    private ObjectMapper objectMapper;
 
     @Autowired
     public AuthService(UserRepository userRepository,
                        SessionRepository sessionRepository,
-                       BCryptPasswordEncoder bCryptPasswordEncoder) {
+                       BCryptPasswordEncoder bCryptPasswordEncoder,
+                       ObjectMapper objectMapper) {
         this.userRepository = userRepository;
         this.sessionRepository = sessionRepository;
         this.bCryptPasswordEncoder = bCryptPasswordEncoder;
         this.secretKey = Jwts.SIG.HS256.key().build();
+        this.objectMapper = objectMapper;
     }
 
-    public UserDto signup(String email,String password) {
+    public UserDto signup(String email,String password) throws UserAlreadyExistsException {
         // Check if user with the given email already exists
         Optional<User> optionalUser = userRepository.findByEmail(email);
         if(optionalUser.isPresent()){
-            return null;
+            throw new UserAlreadyExistsException("User already exists with email: "+email+" . \n Please login or use a different email.");
         }
         User user = new User();
         user.setEmail(email);
@@ -61,22 +66,22 @@ public class AuthService {
 
     // Note: This method should return a custom object containing token, headers, etc
     // For now, to avoid creating an object, directly returning ResponseEntity from here
-    public ResponseEntity<UserDto> login(String email, String password) {
+    public ResponseEntity<UserDto> login(String email, String password) throws NotFoundException, PasswordMismatchException {
         Optional<User> optionalUser = userRepository.findByEmail(email);
         if(optionalUser.isEmpty()){
-            return null; // Replace this with an appropriate exception
+            throw new NotFoundException("User not found with email: "+email);
         }
 
         User user = optionalUser.get();
         if(!bCryptPasswordEncoder.matches(password, user.getPassword())){
-            throw new RuntimeException("Password and User name does not match."); // Replace this with an appropriate exception
+            throw new PasswordMismatchException("Password mismatch for user with email: "+email);
         }
 //        String token= RandomStringUtils.randomAlphanumeric(30);
 
         Map<String,Object> jwtData = new HashMap<>();
         jwtData.put("email",email);
         jwtData.put("createdAt",new Date());
-        jwtData.put("expiryAt",new Date(LocalDate.now().plusDays(3).toEpochDay()));
+        jwtData.put("expiryAt",new Date(LocalDate.now().plusDays(1).toEpochDay()));
         String token= Jwts
                 .builder()
                 .signWith(secretKey)
@@ -97,8 +102,8 @@ public class AuthService {
 
     }
 
-    public void logout(String token, Long userId) {
-        Optional<Session> optionalSession = sessionRepository.findByTokenAndUser_Id(token, userId);
+    public void logout(String token, UUID userId) {
+        Optional<Session> optionalSession = sessionRepository.findByTokenAndUser_Uuid(token, userId);
         if(optionalSession.isEmpty()){
             return; // Replace this with an appropriate exception
         }
@@ -107,8 +112,8 @@ public class AuthService {
         sessionRepository.save(session);
     }
 
-    public SessionStatus validateToken(String token, Long userId) {
-        Optional<Session> optionalSession = sessionRepository.findByTokenAndUser_Id(token, userId);
+    public SessionStatus validateToken(String token, UUID userId) {
+        Optional<Session> optionalSession = sessionRepository.findByTokenAndUser_Uuid(token, userId);
         if(optionalSession.isEmpty()){
             return SessionStatus.ENDED;
         }

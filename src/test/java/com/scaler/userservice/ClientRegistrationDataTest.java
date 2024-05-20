@@ -28,6 +28,7 @@ public class ClientRegistrationDataTest {
                 .clientId("productservice")
                 .clientSecret(bCryptPasswordEncoder.encode("passwordofproductserviceclient"))
                 .clientIdIssuedAt(Instant.now())
+                .clientSecretExpiresAt(Instant.now().plusSeconds(86400))
                 .clientAuthenticationMethod(ClientAuthenticationMethod.CLIENT_SECRET_BASIC)
                 .authorizationGrantType(AuthorizationGrantType.AUTHORIZATION_CODE)
                 .authorizationGrantType(AuthorizationGrantType.REFRESH_TOKEN)

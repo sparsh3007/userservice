@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 
 @Service
 public class UserService {
@@ -26,7 +27,7 @@ public class UserService {
     public UserDto getUserDetails(Long userId) {
         return new UserDto(); // returning an empty user for now. Update this to fetch user details from the DB
     }
-    public UserDto setUserRoles(Long userId, List<Long> roleIds){
+    public UserDto setUserRoles(UUID userId, List<UUID> roleIds){
         Optional<User> userOptional = userRepository.findById(userId);
         List<Role> roles = roleRepository.findAllById(roleIds);
 

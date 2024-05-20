@@ -1,6 +1,9 @@
 package com.scaler.userservice.controllers;
 
 import com.scaler.userservice.dtos.*;
+import com.scaler.userservice.exceptions.NotFoundException;
+import com.scaler.userservice.exceptions.PasswordMismatchException;
+import com.scaler.userservice.exceptions.UserAlreadyExistsException;
 import com.scaler.userservice.models.SessionStatus;
 import com.scaler.userservice.services.AuthService;
 import org.springframework.http.ResponseEntity;
@@ -18,7 +21,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<UserDto> login(@RequestBody LoginRequestDto loginRequestDto) {
+    public ResponseEntity<UserDto> login(@RequestBody LoginRequestDto loginRequestDto) throws NotFoundException, PasswordMismatchException {
        return authService.login(loginRequestDto.getEmail(), loginRequestDto.getPassword());
     }
 
@@ -28,7 +31,7 @@ public class AuthController {
         return ResponseEntity.ok().build();
     }
     @PostMapping("/signup")
-    public ResponseEntity<UserDto> signup(@RequestBody SignUpRequestDto signUpRequestDto) {
+    public ResponseEntity<UserDto> signup(@RequestBody SignUpRequestDto signUpRequestDto) throws UserAlreadyExistsException {
         UserDto userDto = authService.signup(signUpRequestDto.getEmail(), signUpRequestDto.getPassword());
         return ResponseEntity.ok(userDto);
     }

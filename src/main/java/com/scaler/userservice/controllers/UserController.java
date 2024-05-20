@@ -6,6 +6,8 @@ import com.scaler.userservice.services.UserService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.UUID;
+
 @RestController
 @RequestMapping("/users")
 public class UserController {
@@ -21,7 +23,7 @@ public class UserController {
     }
 
     @PostMapping("/{id}/roles")
-    public ResponseEntity<UserDto> setUserRoles(@PathVariable("id") Long id, @RequestBody SetUserRolesRequestDto setUserRolesRequestDto) {
+    public ResponseEntity<UserDto> setUserRoles(@PathVariable("id") UUID id, @RequestBody SetUserRolesRequestDto setUserRolesRequestDto) {
         UserDto userDto = userService.setUserRoles(id, setUserRolesRequestDto.getRoleIds());
         return ResponseEntity.ok(userDto);
     }
